@@ -86,8 +86,6 @@ async fn main() {
         });
     }
 
-    drop(users);
-
     let state = UploadState {
         output: RwLock::new(config.settings.output.clone()),
         lower: AtomicU64::new(lower),
@@ -98,5 +96,7 @@ async fn main() {
         .mount("/", routes![upload])
         .mount("/", StaticFiles::from(out))
         .manage(state)
-        .launch().await.unwrap();
+        .launch()
+        .await
+        .expect("Failed to start webserver");
 }
