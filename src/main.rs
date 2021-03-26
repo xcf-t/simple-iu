@@ -17,10 +17,12 @@ use crate::utils::generate_filename;
 use std::sync::atomic::{AtomicU64, Ordering};
 use rocket::tokio::sync::RwLock;
 use rocket_contrib::serve::StaticFiles;
-use rocket::tokio::fs::File;
+use tokio::fs::File;
 
 #[post("/upload/<ext>", data = "<data>")]
 async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadState>) -> String {
+    println!("A");
+
     let lower = state.lower.load(Ordering::SeqCst);
     let upper = state.upper.load(Ordering::SeqCst);
     let out_dir = state.output.read().await;
@@ -33,11 +35,16 @@ async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadStat
         .replace("{name}", file.as_str())
         .replace("{ext}", ext.as_str());
 
+    println!("{}", filename);
+
     let filepath = Path::new(out_dir.as_str()).join(filename.as_str());
-    let file = File::create(filepath).await;
+    let file = File::create(filepath.clone()).await;
+
+    println!("File {:?}", filepath);
 
     match file {
         Ok(file) => {
+
             data
                 .open(ByteUnit::Byte(user.upload_limit))
                 .stream_to(file)
@@ -53,7 +60,7 @@ async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadStat
 }
 
 lazy_static! {
-    pub static ref USERS: RwLock<HashMap<String, User >> = RwLock::new(HashMap::new());
+    pub static ref USERS: RwLock<HashMap<String, User>> = RwLock::new(HashMap::new());
 }
 
 #[rocket::main]
@@ -93,6 +100,8 @@ async fn main() {
             upload_limit: user_limit,
         });
     }
+
+    drop(users);
 
     let state = UploadState {
         output: RwLock::new(config.settings.output.clone()),
