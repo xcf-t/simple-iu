@@ -9,6 +9,15 @@ min_id = "aaaaa"
 # This has to be larger than min_id
 max_id = "zzzzzz"
 
+# Log message sent on upload
+# Leave empty to disable
+# Replaces {name} with the username of the uploader, {file} with the filename and {date} with the UTC Timestamp
+log = " -> {file} uploaded by {name} on {date}"
+
+# Format for the log {date} timestamp
+# Possible format characters: https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html
+timestamp_format = "%F %T"
+
 # Global upload limit
 upload_limit = "256 MiB"
 
@@ -18,8 +27,12 @@ upload_limit = "256 MiB"
 # For increased security the token should be random and as long as possible
 token = "NLhv97y0b+CvQrur5wyIG2SUYjVzKBg3EFbE2xup52EWSw0JnmBkn6ENWP5fOL"
 
+# Format for the descriptor {date} timestamp
+# Possible format characters: https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html
+timestamp_format = "%F_%H-%M-%S"
+
 # Every user can have a custom descriptor
-# Replaces {name} with the generated id and {ext} with the file extension
+# Replaces {name} with the generated id, {ext} with the file extension and {date} with the UTC Timestamp
 # Default: "{name}.{ext}"
 descriptor = "user1-{name}.{ext}"
 

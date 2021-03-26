@@ -7,6 +7,7 @@ pub struct User {
     pub name: String,
     pub descriptor: String,
     pub upload_limit: u64,
+    pub timestamp_format: String,
 }
 
 #[rocket::async_trait]

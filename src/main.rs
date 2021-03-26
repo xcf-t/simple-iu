@@ -18,12 +18,17 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use rocket::tokio::sync::RwLock;
 use rocket_contrib::serve::StaticFiles;
 use tokio::fs::File;
+use chrono::Utc;
 
 #[post("/upload/<ext>", data = "<data>")]
 async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadState>) -> String {
     let lower = state.lower.load(Ordering::SeqCst);
     let upper = state.upper.load(Ordering::SeqCst);
+
     let out_dir = state.output.read().await;
+    let log_guard = state.log.read().await;
+    let timestamp_format = state.timestamp_format.read().await;
+
     let out_path = Path::new(out_dir.as_str());
 
     let file = generate_filename(lower, upper, &ext, out_path, 0);
@@ -31,9 +36,18 @@ async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadStat
     let filename = user.descriptor
         .clone()
         .replace("{name}", file.as_str())
-        .replace("{ext}", ext.as_str());
+        .replace("{ext}", ext.as_str())
+        .replace("{date}", Utc::now().format(user.timestamp_format.as_str()).to_string().as_str());
 
-    println!("{} by {}", filename, user.name);
+    let log = log_guard
+        .clone()
+        .replace("{file}", filename.as_str())
+        .replace("{name}", user.name.as_str())
+        .replace("{date}", Utc::now().format(timestamp_format.as_str()).to_string().as_str());
+
+    if !log.is_empty() {
+        println!("{}", log);
+    }
 
     let filepath = Path::new(out_dir.as_str()).join(filename.as_str());
     let file = File::create(filepath.clone()).await;
@@ -94,6 +108,7 @@ async fn main() {
             name,
             descriptor: user.descriptor.unwrap_or("{name}.{ext}".to_string()),
             upload_limit: user_limit,
+            timestamp_format: user.timestamp_format.unwrap_or("%F_%H-%M-%S".to_string()),
         });
     }
 
@@ -103,6 +118,8 @@ async fn main() {
         output: RwLock::new(config.settings.output.clone()),
         lower: AtomicU64::new(lower),
         upper: AtomicU64::new(upper),
+        log: RwLock::new(config.settings.log.unwrap_or("{file} uploaded by {name}".to_string()).clone()),
+        timestamp_format: RwLock::new(config.settings.timestamp_format.unwrap_or("%F %T".to_string()).clone())
     };
 
     rocket::ignite()
