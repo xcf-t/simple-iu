@@ -17,6 +17,7 @@ use crate::utils::generate_filename;
 use std::sync::atomic::{AtomicU64, Ordering};
 use rocket::tokio::sync::RwLock;
 use rocket_contrib::serve::StaticFiles;
+use rocket::tokio::fs::File;
 
 #[post("/upload/<ext>", data = "<data>")]
 async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadState>) -> String {
@@ -32,16 +33,23 @@ async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadStat
         .replace("{name}", file.as_str())
         .replace("{ext}", ext.as_str());
 
-    data
-        .open(ByteUnit::Byte(user.upload_limit))
-        .stream_to_file(
-            Path::new(out_dir.as_str())
-                .join(filename.as_str())
-        )
-        .await
-        .unwrap();
+    let filepath = Path::new(out_dir.as_str()).join(filename.as_str());
+    let file = File::create(filepath).await;
 
-    filename
+    match file {
+        Ok(file) => {
+            data
+                .open(ByteUnit::Byte(user.upload_limit))
+                .stream_to(file)
+                .await
+                .unwrap();
+
+            filename
+        }
+        Err(e) => {
+            e.to_string()
+        }
+    }
 }
 
 lazy_static! {

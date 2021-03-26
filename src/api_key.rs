@@ -10,10 +10,10 @@ pub struct User {
 }
 
 #[rocket::async_trait]
-impl<'a, 'r> FromRequest<'a, 'r> for User {
+impl<'a> FromRequest<'a> for User {
     type Error = ();
 
-    async fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+    async fn from_request(req: &'a Request<'_>) -> Outcome<Self, Self::Error> {
         let keys: Vec<_> = req.headers().get("Authorization").collect();
 
         if keys.len() != 1 {
