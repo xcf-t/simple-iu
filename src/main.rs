@@ -21,8 +21,6 @@ use tokio::fs::File;
 
 #[post("/upload/<ext>", data = "<data>")]
 async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadState>) -> String {
-    println!("A");
-
     let lower = state.lower.load(Ordering::SeqCst);
     let upper = state.upper.load(Ordering::SeqCst);
     let out_dir = state.output.read().await;
@@ -35,12 +33,10 @@ async fn upload(user: User, ext: String, data: Data, state: State<'_, UploadStat
         .replace("{name}", file.as_str())
         .replace("{ext}", ext.as_str());
 
-    println!("{}", filename);
+    println!("{} by {}", filename, user.name);
 
     let filepath = Path::new(out_dir.as_str()).join(filename.as_str());
     let file = File::create(filepath.clone()).await;
-
-    println!("File {:?}", filepath);
 
     match file {
         Ok(file) => {
